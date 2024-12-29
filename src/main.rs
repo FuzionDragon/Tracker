@@ -1,10 +1,10 @@
 use clap::{command, Parser, Subcommand};
-use rusqlite::{Connection};
 use edit::{self, edit_file};
 use std::fs;
 use std::fs::OpenOptions;
 
 mod args;
+mod db_interface;
 
 use args::Commands;
 use args::Args;
