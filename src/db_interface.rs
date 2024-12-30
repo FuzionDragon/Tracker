@@ -7,7 +7,7 @@ struct Task {
   desc: String,
 }
 
-pub fn initialisation (conn: &Connection) -> Result<()> {
+pub fn init (conn: &Connection) -> Result<()> {
 
   let task_table_create = 
     "create table if not exists tasks (
@@ -25,7 +25,7 @@ pub fn initialisation (conn: &Connection) -> Result<()> {
   Ok(())
 }
 
-pub fn list_tasks (conn: &Connection) -> Result<()> {
+pub fn list (conn: &Connection) -> Result<()> {
 
   // Retrieves all tasks
   let mut stmt = 
@@ -51,7 +51,7 @@ pub fn list_tasks (conn: &Connection) -> Result<()> {
   Ok(())
 }
 
-pub fn add_task (conn: &Connection, new_name: &String, new_desc: &String) -> Result<()> {
+pub fn add (conn: &Connection, new_name: &String, new_desc: &String) -> Result<()> {
 
   let add_task = "insert into tasks (name, body) values (?1, ?2);"; 
 
@@ -63,19 +63,19 @@ pub fn add_task (conn: &Connection, new_name: &String, new_desc: &String) -> Res
   Ok(())
 }
 
-pub fn complete_task (conn: &Connection, id: &i32) -> Result<()> {
+pub fn complete (conn: &Connection, id: &i32) -> Result<()> {
 
   let complete_task = "delete from tasks where todo_id = ?1";
 
   conn.execute(
     complete_task, 
-    params![line],
+    params![id],
   )?;
   
   Ok(())
 }
 
-pub fn clear_tasks (conn: &Connection) -> Result<()> {
+pub fn clear (conn: &Connection) -> Result<()> {
 
   let clear_tasks = "delete from tasks";
 

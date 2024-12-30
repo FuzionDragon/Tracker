@@ -1,7 +1,8 @@
 use clap::{command, Parser, Subcommand};
 use edit::{self, edit_file};
 use std::fs;
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, File};
+use std::io::{self, prelude::*, BufReader, Read};
 
 mod args;
 mod db_interface;
@@ -19,9 +20,10 @@ fn main() {
     },
 
     Some(Commands::List) => {
-      let contents = fs::read_to_string(path)
+      let contents = fs::read_to_string(&path)
         .expect("Cannot find file");
       println!("{}", contents);
+      parse_tasks(path);
     },
 
     Some(Commands::Clear { file_path }) => {
@@ -56,4 +58,25 @@ fn edit_tasks(path: &String) {
   println!("Editing: {}", &path);
   let edited = edit::edit_file(path)
     .expect("Unable to edit file");
+}
+
+fn parse_tasks(path: &String) -> io::Result<()> {
+  let file = File::open(path)?;
+  let reader = BufReader::new(file);
+
+  for line in reader.lines() {
+    let string = line?;
+    let vec: Vec<char> = string.clone()
+      .chars()
+      .collect();    
+
+    if vec[0] != '#' {
+      let sub_str = string.split("|");
+      for c in sub_str {
+        println!("{}", c.trim());
+      }
+    }
+  }
+
+  Ok(())
 }

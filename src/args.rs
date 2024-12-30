@@ -13,6 +13,11 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Commands {
+  /// Initialises a Tracker database at a given path 
+  /// Required to do once before using Tracker
+  Init {
+    path: String,
+  },
   /// Edit tasks in default text editor $EDITOR
   Edit,
   /// Lists all tasks in a given tracker
