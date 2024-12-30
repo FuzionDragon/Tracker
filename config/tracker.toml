@@ -1,2 +1,2 @@
 [config]
-path = "tracker"
+path = "dev/rust/tracker/config/tracker"

@@ -4,9 +4,6 @@ use clap::{ command, Parser, Subcommand };
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
 pub struct Args {
-  #[arg(short, long, default_value="tasks.txt")]
-  pub path: String,
-
   #[command(subcommand)]
   pub command: Option<Commands>,
 }

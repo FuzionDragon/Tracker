@@ -3,6 +3,9 @@ use edit::{self, edit_file};
 use std::fs;
 use std::fs::{OpenOptions, File};
 use std::io::{self, prelude::*, BufReader, Read};
+use serde_derive::Deserialize;
+use dirs::home_dir;
+use toml;
 
 mod args;
 mod db_interface;
@@ -10,20 +13,35 @@ mod db_interface;
 use args::Commands;
 use args::Args;
 
+#[derive(Deserialize)]
+struct Data {
+  config: Config,
+}
+
+#[derive(Deserialize)]
+struct Config {
+  path: String,
+}
+
 fn main() {
+  let config_path = "dev/rust/tracker/config/tracker.toml".to_owned();
+  let full_path = home_dir()
+    .expect("Unable to find home directory")
+    .join(config_path);
+  let config = fs::read_to_string(full_path).expect("Cannot read file");
+  let data: Data = toml::from_str(&config).expect("Cannot convert toml to table");
+  let path = data.config.path;
   let args = Args::parse();
-  let path = &args.path;
+
+  println!("{}", &path);
 
   match &args.command {
     Some(Commands::Edit) => {
-      edit_tasks(path);
+      edit_tasks(&path);
     },
 
     Some(Commands::List) => {
-      let contents = fs::read_to_string(&path)
-        .expect("Cannot find file");
-      println!("{}", contents);
-      parse_tasks(path);
+      parse_tasks(&path);
     },
 
     Some(Commands::Clear { file_path }) => {
@@ -49,23 +67,30 @@ fn main() {
     },
 
     none => {
-      edit_tasks(path);
+      edit_tasks(&path);
     },
   }
 }
 
 fn edit_tasks(path: &String) {
   println!("Editing: {}", &path);
-  let edited = edit::edit_file(path)
+  let full_path = home_dir()
+    .expect("Unable to find home directory")
+    .join(path);
+  let edited = edit::edit_file(full_path)
     .expect("Unable to edit file");
 }
 
 fn parse_tasks(path: &String) -> io::Result<()> {
-  let file = File::open(path)?;
+  let full_path = home_dir()
+    .expect("Unable to find home directory")
+    .join(path);
+  let file = File::open(full_path)?;
   let reader = BufReader::new(file);
 
   for line in reader.lines() {
     let string = line?;
+    println!("{}", &string);
     let vec: Vec<char> = string.clone()
       .chars()
       .collect();    
