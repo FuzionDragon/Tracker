@@ -1,2 +1,5 @@
-[config]
-path = "dev/rust/tracker/config/tracker"
+[default_config]
+database = "sqlite"
+path = ".local/share/tracker/tracker.db"
+
+[[tracker]]

@@ -10,21 +10,26 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Commands {
-  /// Initialises a Tracker database at a given path 
+  /// Initialises and sets current Tracker database at a given path 
   /// Required to do once before using Tracker
   Init {
-    path: String,
+    tracker: String,
   },
   /// Edit tasks in default text editor $EDITOR
   Edit,
   /// Lists all tasks in a given tracker
   List,
   /// Clears all tasks in a given tracker
+  /// Allows specifying which tracker to be cleared
   Clear {
-    file_path: Option<String>,
+    tracker: Option<String>,
   },
-  /// Queries a specific task based on ID
+  /// Queries a specific task based on tracker ID
   Query {
     id: String,
   },
+  /// Prints current tracker name and id
+  Info,
+  Change,
+  ListTrackers,
 }
