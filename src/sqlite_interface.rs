@@ -12,8 +12,8 @@ pub fn init(conn: &Connection) -> Result<()> {
   let task_table_create = r#"
     create table if not exists tasks (
     priority integer not null,
-    name string not null unique,
-    desc string not null
+    name text not null unique,
+    desc text not null
   )"#;
 
   conn.execute(
@@ -59,9 +59,9 @@ pub fn load(conn: &Connection) -> Result<Vec<Task>> {
     [],
     |row| {
     Ok(Task {
-      priority: row.get(1)?,
-      name: row.get(2)?,
-      desc: row.get(3)?
+      priority: row.get(0)?,
+      name: row.get(1)?,
+      desc: row.get(2)?
     }).into()
   })?;
 
@@ -93,7 +93,6 @@ pub fn overwrite(conn: &Connection, tasks: Vec<Task>) -> Result<()> {
   let add_task = "insert into tasks (priority, name, desc) values (?1, ?2, ?3);"; 
 
   for task in tasks {
-    println!("{:?}", &task);
     conn.execute(
       &add_task,
       params![task.priority, task.name, task.desc],

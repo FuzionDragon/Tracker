@@ -78,7 +78,7 @@ fn edit_tasks(conn: &Connection) -> Result<(), rusqlite::Error> {
   let tasks: Vec<Task> = sqlite_interface::load(&conn)?;
   let mut data: String = String::new();
 
-  data.push_str("# priority, name, description");
+  data.push_str("# priority, name, description\n");
   for task in tasks {
     let line = format!("{}, {}, {}\n", task.priority, task.name, task.desc);
     data.push_str(&line);
@@ -91,7 +91,6 @@ fn edit_tasks(conn: &Connection) -> Result<(), rusqlite::Error> {
   let mut edited_tasks: Vec<Task> = vec![]; 
   for line in edited_lines {
     let task: Vec<&str> = line.split(',').collect();
-    println!("{}: {}, {}", &task[0], &task[1], &task[2]);
     edited_tasks.push(
       Task {
         priority: task[0].trim().parse::<i32>().unwrap(),
