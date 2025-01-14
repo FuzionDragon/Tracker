@@ -1,5 +1,4 @@
 [default_config]
 database = "sqlite"
-path = ".local/share/tracker/tracker.db"
 
 [[tracker]]

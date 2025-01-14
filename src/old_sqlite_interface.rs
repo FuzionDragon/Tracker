@@ -8,10 +8,11 @@ pub struct Task {
   pub desc: String,
 }
 
+#[tokio::main]
 pub async fn init(db_url: &str) -> Result<()> {
-  if !Sqlite::database_exists(db_url).await.unwrap_or(false) {
+  if !Sqlite::database_exists(db_url).await().unwrap_or(false) {
     println!("Creating database: {}", db_url);
-    match Sqlite::create_database(db_url).await {
+    match Sqlite::create_database(db_url).await() {
        Ok(_) => println!("Create db success"), 
        Err(error) => println!("error: {}", error),
     }

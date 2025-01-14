@@ -4,14 +4,13 @@ use edit;
 use dirs::home_dir;
 use rusqlite::{Connection, Result};
 use serde_derive::Deserialize;
-use sqlite_interface::init;
 use toml;
 
 mod args;
 mod sqlite_interface;
 use args::Commands;
 use args::Args;
-use sqlite_interface::{overwrite, Task};
+use sqlite_interface::Task;
 
 #[derive(Deserialize)]
 struct Data {
@@ -24,51 +23,53 @@ struct Config {
   database: String,
 }
 
-fn main() -> Result<(), rusqlite::Error> {
+const DB_URL: &str = "sqlite://tracker.db";
+
+#[tokio::main]
+async fn main() -> Result<(), rusqlite::Error> {
   let config_path = home_dir().expect("Unable to find home directory")
     .join("dev/rust/tracker/config/tracker.toml".to_owned());
   let config = fs::read_to_string(config_path).expect("Cannot read file");
   let data: Data = toml::from_str(&config).expect("Cannot convert toml to table");
   let db_path = home_dir().expect("Unable to find home directory")
     .join(data.default_config.path);
-  let conn = Connection::open(db_path)?;
+  let _ = sqlite_interface::init(&DB_URL).await;
 
-  init(&conn)?;
   let args = Args::parse();
-  match &args.command {
-    Some(Commands::Edit) => {
-      edit_tasks(&conn)?;
-    },
-
-    Some(Commands::List) => {
-      sqlite_interface::print(&conn)?;
-    },
-
-    Some(Commands::Clear { tracker }) => {
-      sqlite_interface::clear(&conn)?;
-      println!("Cleared tasks");
-    },
-
-    Some(Commands::Query { id }) => {
-      println!("Query");
-    },
-
-    Some(Commands::Info) => {
-      println!("Query");
-    },
-    
-    Some(Commands::Change) => {
-      println!("Query");
-    },
-    
-    Some(Commands::ListTrackers) => {
-      println!("Query");
-    },
-
-    none => {
-      let _ = edit_tasks(&conn);
-    },
-  }
+//  match &args.command {
+//    Some(Commands::Edit) => {
+//      edit_tasks(&conn)?;
+//    },
+//
+//    Some(Commands::List) => {
+//      sqlite_interface::print(&conn)?;
+//    },
+//
+//    Some(Commands::Clear { tracker }) => {
+//      sqlite_interface::clear(&conn)?;
+//      println!("Cleared tasks");
+//    },
+//
+//    Some(Commands::Query { id }) => {
+//      println!("Query");
+//    },
+//
+//    Some(Commands::Info) => {
+//      println!("Query");
+//    },
+//    
+//    Some(Commands::Change) => {
+//      println!("Query");
+//    },
+//    
+//    Some(Commands::ListTrackers) => {
+//      println!("Query");
+//    },
+//
+//    none => {
+//      let _ = edit_tasks(&conn);
+//    },
+//  }
 
   Ok(())
 }
@@ -77,6 +78,7 @@ fn edit_tasks(conn: &Connection) -> Result<(), rusqlite::Error> {
   println!("Editing task");
   let tasks: Vec<Task> = sqlite_interface::load(&conn)?;
   let mut data: String = String::new();
+  println!("{:?}", &tasks);
 
   data.push_str("# priority, name, description\n");
   for task in tasks {
@@ -91,6 +93,7 @@ fn edit_tasks(conn: &Connection) -> Result<(), rusqlite::Error> {
   let mut edited_tasks: Vec<Task> = vec![]; 
   for line in edited_lines {
     let task: Vec<&str> = line.split(',').collect();
+//    println!("{:?}", &task);
     edited_tasks.push(
       Task {
         priority: task[0].trim().parse::<i32>().unwrap(),
@@ -99,7 +102,7 @@ fn edit_tasks(conn: &Connection) -> Result<(), rusqlite::Error> {
       }
     )
   }
-  overwrite(&conn, edited_tasks)?;
+  sqlite_interface::overwrite(&conn, edited_tasks)?;
 
   Ok(())
 }
