@@ -42,20 +42,12 @@ async fn main() -> Result<()> {
 
   let db = SqlitePool::connect(DB_URL).await.unwrap();
 
-  let result = sqlx::query(r#"
-    create table if not exists tasks (
-    priority integer not null,
-    name text not null,
-    desc text not null
-    );
-  "#).execute(&db)
-    .await
-    .unwrap();
+  sqlite_interface::init(&db, "Name".to_string()).await?;
 
   let args = Args::parse();
   match &args.command {
     Some(Commands::Edit) => {
-//      edit_tasks(&conn)?;
+      edit_tasks(db).await?;
     },
 
     Some(Commands::List) => {
@@ -67,7 +59,7 @@ async fn main() -> Result<()> {
     },
 
     Some(Commands::Clear { tracker }) => {
- //     sqlite_interface::clear(&conn)?;
+      sqlite_interface::clear(&db).await?;
       println!("Cleared tasks");
     },
 
@@ -88,7 +80,7 @@ async fn main() -> Result<()> {
     },
 
     none => {
- //     let _ = edit_tasks(&conn);
+      edit_tasks(db).await?;
     },
   }
 
@@ -123,7 +115,7 @@ async fn edit_tasks(db: SqlitePool) -> Result<()> {
       }
     )
   }
-  sqlite_interface::overwrite(&db, edited_tasks)?;
+  sqlite_interface::overwrite(&db, edited_tasks).await?;
 
   Ok(())
 }

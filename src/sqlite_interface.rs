@@ -8,14 +8,14 @@ pub struct Task {
   pub desc: String,
 }
 
-pub async fn init(db: SqlitePool, name: String) -> Result<()> {
+pub async fn init(db: &SqlitePool, name: String) -> Result<()> {
   let result = sqlx::query(r#"
     create table if not exists tasks (
     priority integer not null,
     name text not null,
     desc text not null
     );
-  "#).execute(&db)
+  "#).execute(db)
     .await
     .unwrap();
 
@@ -49,10 +49,19 @@ pub async fn add(db: &SqlitePool, new_priority: i32, new_name: String, new_desc:
   Ok(())
 }
 
-pub fn overwrite(db: &SqlitePool, mut tasks: Vec<Task>) -> Result<()> {
-//  clear(&conn)?;
-
+pub async fn overwrite(db: &SqlitePool, mut tasks: Vec<Task>) -> Result<()> {
+  clear(&db).await?;
   tasks.sort_by(|a, b| a.priority.cmp(&b.priority));
+
+  for task in tasks {
+    sqlx::query("INSERT INTO tasks (priority, name, desc) VALUES ($1, $2, $3)")
+      .bind(task.priority)
+      .bind(task.name)
+      .bind(task.desc)
+      .execute(db)
+      .await
+      .unwrap();
+  };
 
   Ok(())
 }
@@ -65,6 +74,10 @@ pub fn sort(db: SqlitePool) -> Result<()> {
   Ok(())
 }
 
-pub fn clear(db: SqlitePool) -> Result<()> {
+pub async fn clear(db: &SqlitePool) -> Result<()> {
+  let result = sqlx::query("DELETE FROM tasks").execute(db)
+    .await
+    .unwrap();
+    
   Ok(())
 }
