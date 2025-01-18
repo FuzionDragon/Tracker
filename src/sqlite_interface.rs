@@ -22,10 +22,6 @@ pub async fn init(db: &SqlitePool, name: String) -> Result<()> {
   Ok(())
 }
 
-pub fn print(db: &SqlitePool) -> Result<()> {
-  Ok(())
-}
-
 pub async fn load(db: &SqlitePool) -> Result<Vec<Task>> {
   println!("Loading");
 
@@ -63,14 +59,6 @@ pub async fn overwrite(db: &SqlitePool, mut tasks: Vec<Task>) -> Result<()> {
       .unwrap();
   };
 
-  Ok(())
-}
-
-pub fn complete(db: SqlitePool, id: &i32) -> Result<()> {
-  Ok(())
-}
-
-pub fn sort(db: SqlitePool) -> Result<()> {
   Ok(())
 }
 
