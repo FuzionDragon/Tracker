@@ -2,8 +2,9 @@ use std::fs;
 use clap::Parser;
 use edit;
 use dirs::home_dir;
-use rusqlite::{Connection, Result};
+use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 use serde_derive::Deserialize;
+use anyhow::Result;
 use toml;
 
 mod args;
@@ -19,64 +20,84 @@ struct Data {
 
 #[derive(Deserialize)]
 struct Config {
-  path: String,
   database: String,
 }
 
 const DB_URL: &str = "sqlite://tracker.db";
 
 #[tokio::main]
-async fn main() -> Result<(), rusqlite::Error> {
+async fn main() -> Result<()> {
   let config_path = home_dir().expect("Unable to find home directory")
     .join("dev/rust/tracker/config/tracker.toml".to_owned());
   let config = fs::read_to_string(config_path).expect("Cannot read file");
   let data: Data = toml::from_str(&config).expect("Cannot convert toml to table");
-  let db_path = home_dir().expect("Unable to find home directory")
-    .join(data.default_config.path);
-  let _ = sqlite_interface::init(&DB_URL).await;
+
+  if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
+    println!("Creating database: {}", DB_URL);
+    match Sqlite::create_database(DB_URL).await {
+       Ok(_) => println!("Create db success"), 
+       Err(error) => println!("error: {}", error),
+    }
+  }
+
+  let db = SqlitePool::connect(DB_URL).await.unwrap();
+
+  let result = sqlx::query(r#"
+    create table if not exists tasks (
+    priority integer not null,
+    name text not null,
+    desc text not null
+    );
+  "#).execute(&db)
+    .await
+    .unwrap();
 
   let args = Args::parse();
-//  match &args.command {
-//    Some(Commands::Edit) => {
+  match &args.command {
+    Some(Commands::Edit) => {
 //      edit_tasks(&conn)?;
-//    },
-//
-//    Some(Commands::List) => {
-//      sqlite_interface::print(&conn)?;
-//    },
-//
-//    Some(Commands::Clear { tracker }) => {
-//      sqlite_interface::clear(&conn)?;
-//      println!("Cleared tasks");
-//    },
-//
-//    Some(Commands::Query { id }) => {
-//      println!("Query");
-//    },
-//
-//    Some(Commands::Info) => {
-//      println!("Query");
-//    },
-//    
-//    Some(Commands::Change) => {
-//      println!("Query");
-//    },
-//    
-//    Some(Commands::ListTrackers) => {
-//      println!("Query");
-//    },
-//
-//    none => {
-//      let _ = edit_tasks(&conn);
-//    },
-//  }
+    },
+
+    Some(Commands::List) => {
+      println!("Listing Database");
+      let tasks: Vec<Task> = sqlite_interface::load(&db).await?;
+      for task in tasks {
+        println!("Priority: {} | Name: {} | Description: {}", task.priority, task.name, task.desc);
+      }
+    },
+
+    Some(Commands::Clear { tracker }) => {
+ //     sqlite_interface::clear(&conn)?;
+      println!("Cleared tasks");
+    },
+
+    Some(Commands::Query { id }) => {
+      println!("Query");
+    },
+
+    Some(Commands::Info) => {
+      println!("Query");
+    },
+    
+    Some(Commands::Change) => {
+      println!("Query");
+    },
+    
+    Some(Commands::ListTrackers) => {
+      println!("Query");
+    },
+
+    none => {
+ //     let _ = edit_tasks(&conn);
+    },
+  }
 
   Ok(())
 }
 
-fn edit_tasks(conn: &Connection) -> Result<(), rusqlite::Error> {
+async fn edit_tasks(db: SqlitePool) -> Result<()> {
   println!("Editing task");
-  let tasks: Vec<Task> = sqlite_interface::load(&conn)?;
+  let tasks: Vec<Task> = sqlite_interface::load(&db).await?;
   let mut data: String = String::new();
   println!("{:?}", &tasks);
 
@@ -102,7 +123,7 @@ fn edit_tasks(conn: &Connection) -> Result<(), rusqlite::Error> {
       }
     )
   }
-  sqlite_interface::overwrite(&conn, edited_tasks)?;
+  sqlite_interface::overwrite(&db, edited_tasks)?;
 
   Ok(())
 }
