@@ -23,7 +23,7 @@ pub async fn init(db: &SqlitePool, name: String) -> Result<()> {
 }
 
 pub async fn load(db: &SqlitePool) -> Result<Vec<Task>> {
-  println!("Loading");
+  println!("Loading Tasks");
 
   let tasks = sqlx::query_as::<_, Task>("SELECT * FROM tasks")
     .fetch_all(db)

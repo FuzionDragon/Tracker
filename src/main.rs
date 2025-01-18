@@ -91,7 +91,6 @@ async fn edit_tasks(db: SqlitePool) -> Result<()> {
   println!("Editing task");
   let tasks: Vec<Task> = sqlite_interface::load(&db).await?;
   let mut data: String = String::new();
-  println!("{:?}", &tasks);
 
   data.push_str("# priority, name, description\n");
   for task in tasks {
