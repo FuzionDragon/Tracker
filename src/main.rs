@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
 
   let db = SqlitePool::connect(DB_URL).await.unwrap();
 
-  sqlite_interface::init(&db, "Name".to_string()).await?;
+  sqlite_interface::init(&db, "tasks".to_string()).await?;
 
   let args = Args::parse();
   match &args.command {
