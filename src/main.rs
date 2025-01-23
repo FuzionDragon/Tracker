@@ -105,14 +105,17 @@ async fn edit_tasks(db: SqlitePool) -> Result<()> {
   let mut edited_tasks: Vec<Task> = vec![]; 
   for line in edited_lines {
     let task: Vec<&str> = line.split(',').collect();
-//    println!("{:?}", &task);
-    edited_tasks.push(
-      Task {
-        priority: task[0].trim().parse::<i32>().unwrap(),
-        name: task[1].trim().to_string(),
-        desc: task[2].trim().to_string(),
+    if task.len() == 3 {
+      if task[0].parse::<i32>().is_ok() {
+        edited_tasks.push(
+          Task {
+            priority: task[0].trim().parse::<i32>().unwrap(),
+            name: task[1].trim().to_string(),
+            desc: task[2].trim().to_string(),
+          }
+        )
       }
-    )
+    }
   }
   sqlite_interface::overwrite(&db, edited_tasks).await?;
 
