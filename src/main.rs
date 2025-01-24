@@ -11,7 +11,7 @@ mod args;
 mod sqlite_interface;
 use args::Commands;
 use args::Args;
-use sqlite_interface::Task;
+use sqlite_interface::Project;
 
 #[derive(Deserialize)]
 struct Data {
@@ -42,25 +42,25 @@ async fn main() -> Result<()> {
 
   let db = SqlitePool::connect(DB_URL).await.unwrap();
 
-  sqlite_interface::init(&db, "tasks".to_string()).await?;
+  sqlite_interface::init(&db, "projects".to_string()).await?;
 
   let args = Args::parse();
   match &args.command {
     Some(Commands::Edit) => {
-      edit_tasks(db).await?;
+      edit_projects(db).await?;
     },
 
     Some(Commands::List) => {
       println!("Listing Database");
-      let tasks: Vec<Task> = sqlite_interface::load(&db).await?;
-      for task in tasks {
-        println!("Priority: {} | Name: {} | Description: {}", task.priority, task.name, task.desc);
+      let projects: Vec<Project> = sqlite_interface::load(&db).await?;
+      for project in projects {
+        println!("Priority: {} | Name: {} | Description: {}", project.priority, project.name, project.desc);
       }
     },
 
     Some(Commands::Clear { tracker }) => {
       sqlite_interface::clear(&db).await?;
-      println!("Cleared tasks");
+      println!("Cleared projects");
     },
 
     Some(Commands::Query { id }) => {
@@ -71,7 +71,15 @@ async fn main() -> Result<()> {
       println!("Query");
     },
     
-    Some(Commands::Change) => {
+    Some(Commands::Update) => {
+      println!("Query");
+    },
+
+    Some(Commands::Mark) => {
+      println!("Query");
+    },
+
+    Some(Commands::Jump) => {
       println!("Query");
     },
     
@@ -80,21 +88,26 @@ async fn main() -> Result<()> {
     },
 
     none => {
-      edit_tasks(db).await?;
+      edit_projects(db).await?;
     },
   }
 
   Ok(())
 }
 
-async fn edit_tasks(db: SqlitePool) -> Result<()> {
-  println!("Editing task");
-  let tasks: Vec<Task> = sqlite_interface::load(&db).await?;
+async fn edit_projects(db: SqlitePool) -> Result<()> {
+  println!("Editing project");
+  let projects: Vec<Project> = sqlite_interface::load(&db).await?;
   let mut data: String = String::new();
 
-  data.push_str("# priority, name, description\n");
-  for task in tasks {
-    let line = format!("{}, {}, {}\n", task.priority, task.name, task.desc);
+  data.push_str("# priority, name, description, directory (optional)\n");
+  for project in projects {
+    let line = match project.dir {
+      Some(dir) => format!("{}, {}, {}, {}\n", project.priority, project.name, project.desc, dir),
+      
+      None => format!("{}, {}, {}\n", project.priority, project.name, project.desc),
+    };
+
     data.push_str(&line);
   }
   let edited = edit::edit(data).expect("Unable to edit file");
@@ -102,16 +115,28 @@ async fn edit_tasks(db: SqlitePool) -> Result<()> {
   let mut edited_lines: Vec<&str> = edited.lines().collect();
   edited_lines.remove(0);
 
-  let mut edited_tasks: Vec<Task> = vec![]; 
+  let mut edited_tasks: Vec<Project> = vec![]; 
   for line in edited_lines {
-    let task: Vec<&str> = line.split(',').collect();
-    if task.len() == 3 {
-      if task[0].parse::<i32>().is_ok() {
+    let project: Vec<&str> = line.split(',').collect();
+    if project.len() == 3 {
+      if project[0].parse::<i32>().is_ok() {
         edited_tasks.push(
-          Task {
-            priority: task[0].trim().parse::<i32>().unwrap(),
-            name: task[1].trim().to_string(),
-            desc: task[2].trim().to_string(),
+          Project {
+            priority: project[0].trim().parse::<i32>().unwrap(),
+            name: project[1].trim().to_string(),
+            desc: project[2].trim().to_string(),
+            dir: None,
+          }
+        )
+      }
+    } else if project.len() == 4 {
+      if project[0].parse::<i32>().is_ok() {
+        edited_tasks.push(
+          Project {
+            priority: project[0].trim().parse::<i32>().unwrap(),
+            name: project[1].trim().to_string(),
+            desc: project[2].trim().to_string(),
+            dir: Some(project[3].trim().to_string()),
           }
         )
       }

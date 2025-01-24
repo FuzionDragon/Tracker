@@ -30,6 +30,10 @@ pub enum Commands {
   },
   /// Prints current tracker name and id
   Info,
-  Change,
+  Update,
+  /// Adds current directory to the tracker
+  Mark,
+  /// Jumps to a tracked directory
+  Jump,
   ListTrackers,
 }
