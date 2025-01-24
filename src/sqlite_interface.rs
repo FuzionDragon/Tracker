@@ -44,6 +44,19 @@ pub async fn add(db: &SqlitePool, new_priority: i32, new_name: String, new_desc:
   Ok(())
 }
 
+pub async fn update(db: &SqlitePool, name: String, new_dir: String) -> Result<()> {
+  sqlx::query(r#"
+    UPDATE projects
+    SET dir=$1
+    WHERE name=$2;
+    "#).bind(new_dir)
+    .bind(name)
+    .execute(db)
+    .await?;
+
+  Ok(())
+}
+
 pub async fn overwrite(db: &SqlitePool, mut projects: Vec<Project>) -> Result<()> {
   clear(&db).await?;
   projects.sort_by(|a, b| a.priority.cmp(&b.priority));

@@ -54,7 +54,10 @@ async fn main() -> Result<()> {
       println!("Listing Database");
       let projects: Vec<Project> = sqlite_interface::load(&db).await?;
       for project in projects {
-        println!("Priority: {} | Name: {} | Description: {}", project.priority, project.name, project.desc);
+        match project.dir {
+          Some(dir) => println!("Priority: {} | Name: {} | Description: {} | Directory: {}", project.priority, project.name, project.desc, dir),
+          None => println!("Priority: {} | Name: {} | Description: {} | Directory: None", project.priority, project.name, project.desc),
+        }
       }
     },
 
@@ -71,8 +74,9 @@ async fn main() -> Result<()> {
       println!("Query");
     },
     
-    Some(Commands::Update) => {
-      println!("Query");
+    Some(Commands::Update { new_dir, name }) => {
+      sqlite_interface::update(&db, name.to_string(), new_dir.to_string()).await?;
+      println!("Updated project dir");
     },
 
     Some(Commands::Mark) => {
