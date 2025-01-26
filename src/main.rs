@@ -159,7 +159,7 @@ async fn mark_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
     let collection = cwd
       .split('/')
       .collect::<Vec<&str>>();
-    sqlite_interface::add(&db, 1, collection[collection.len() - 1].to_string(), "Marked Directory".to_string(), cwd.to_owned()).await?;
+    sqlite_interface::add(&db, 1, collection[collection.len() - 1].to_string(), "Marked Directory".to_owned(), cwd.to_owned()).await?;
   } else {
     sqlite_interface::update(&db, name.to_owned().unwrap(), cwd.to_owned()).await?;
   }
