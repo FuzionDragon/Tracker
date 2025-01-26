@@ -35,7 +35,9 @@ pub enum Commands {
     new_dir: String,
   },
   /// Adds current directory to the tracker
-  Mark,
+  Mark {
+    name: Option<String>,
+  },
   /// Jumps to a tracked directory
   Jump,
   ListTrackers,

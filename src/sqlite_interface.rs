@@ -9,6 +9,13 @@ pub struct Project {
   pub dir: Option<String>,
 }
 
+pub enum Fields {
+  Priority,
+  Name,
+  Desc,
+  Dir,
+}
+
 pub async fn init(db: &SqlitePool, name: String) -> Result<()> {
   sqlx::query(r#"
     create table if not exists projects (
@@ -34,10 +41,11 @@ pub async fn load(db: &SqlitePool) -> Result<Vec<Project>> {
 }
 
 pub async fn add(db: &SqlitePool, new_priority: i32, new_name: String, new_desc: String, new_dir: String) -> Result<()> {
-  sqlx::query("INSERT INTO projects (priority, name, desc) VALUES ($1, $2, $3)")
+  sqlx::query("INSERT INTO projects (priority, name, desc, dir) VALUES ($1, $2, $3, $4)")
     .bind(new_priority)
     .bind(new_name)
     .bind(new_desc)
+    .bind(new_dir)
     .execute(db)
     .await?;
 

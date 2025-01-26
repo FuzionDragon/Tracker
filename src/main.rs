@@ -1,6 +1,6 @@
-use std::fs;
+use std::{ fs, env };
+use anyhow::Ok;
 use clap::Parser;
-use edit;
 use dirs::home_dir;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 use serde_derive::Deserialize;
@@ -34,10 +34,7 @@ async fn main() -> Result<()> {
 
   if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
     println!("Creating database: {}", DB_URL);
-    match Sqlite::create_database(DB_URL).await {
-       Ok(_) => println!("Create db success"), 
-       Err(error) => println!("error: {}", error),
-    }
+    Sqlite::create_database(DB_URL).await?;
   }
 
   let db = SqlitePool::connect(DB_URL).await.unwrap();
@@ -79,8 +76,9 @@ async fn main() -> Result<()> {
       println!("Updated project dir");
     },
 
-    Some(Commands::Mark) => {
-      println!("Query");
+    Some(Commands::Mark { name }) => {
+      mark_project(db, name).await?;
+      println!("Marked Directory");
     },
 
     Some(Commands::Jump) => {
@@ -147,6 +145,26 @@ async fn edit_projects(db: SqlitePool) -> Result<()> {
     }
   }
   sqlite_interface::overwrite(&db, edited_tasks).await?;
+
+  Ok(())
+}
+
+async fn mark_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
+  let cwd = env::current_dir()?
+    .into_os_string()
+    .into_string()
+    .unwrap();
+
+  if name.is_none() {
+    let collection = cwd
+      .split('/')
+      .collect::<Vec<&str>>();
+    sqlite_interface::add(&db, 1, collection[collection.len() - 1].to_string(), "Marked Directory".to_string(), cwd.to_owned()).await?;
+  } else {
+    sqlite_interface::update(&db, name.to_owned().unwrap(), cwd.to_owned()).await?;
+  }
+
+  println!("{}", cwd);
 
   Ok(())
 }
