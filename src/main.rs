@@ -81,7 +81,11 @@ async fn main() -> Result<()> {
       println!("Marked Directory");
     },
 
-    Some(Commands::Jump) => {
+    Some(Commands::Jump { name }) => {
+      println!("Query");
+    },
+
+    Some(Commands::Hook) => {
       println!("Query");
     },
     
@@ -131,17 +135,15 @@ async fn edit_projects(db: SqlitePool) -> Result<()> {
           }
         )
       }
-    } else if project.len() == 4 {
-      if project[0].parse::<i32>().is_ok() {
-        edited_tasks.push(
-          Project {
-            priority: project[0].trim().parse::<i32>().unwrap(),
-            name: project[1].trim().to_string(),
-            desc: project[2].trim().to_string(),
-            dir: Some(project[3].trim().to_string()),
-          }
-        )
-      }
+    } else if project.len() == 4 && project[0].parse::<i32>().is_ok() {
+      edited_tasks.push(
+        Project {
+          priority: project[0].trim().parse::<i32>().unwrap(),
+          name: project[1].trim().to_string(),
+          desc: project[2].trim().to_string(),
+          dir: Some(project[3].trim().to_string()),
+        }
+      )
     }
   }
   sqlite_interface::overwrite(&db, edited_tasks).await?;
@@ -159,12 +161,18 @@ async fn mark_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
     let collection = cwd
       .split('/')
       .collect::<Vec<&str>>();
-    sqlite_interface::add(&db, 1, collection[collection.len() - 1].to_string(), "Marked Directory".to_owned(), cwd.to_owned()).await?;
+    sqlite_interface::add(&db, 1, collection[collection.len() - 1].to_string(), "Marked Directory".to_owned(), cwd).await?;
   } else {
-    sqlite_interface::update(&db, name.to_owned().unwrap(), cwd.to_owned()).await?;
+    sqlite_interface::update(&db, name.to_owned().unwrap(), cwd).await?;
   }
 
-  println!("{}", cwd);
+  Ok(())
+}
 
+async fn jump_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
+  Ok(())
+}
+
+async fn hook_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
   Ok(())
 }

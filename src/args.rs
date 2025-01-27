@@ -35,10 +35,17 @@ pub enum Commands {
     new_dir: String,
   },
   /// Adds current directory to the tracker
+  /// If there is no hooked directory, then the marked directory becomes the next jump location
   Mark {
     name: Option<String>,
   },
-  /// Jumps to a tracked directory
-  Jump,
+  /// Jumps to a marked directory
+  /// By default tracker will jump to the hooked directory
+  /// If there is no hooked directory, then jump to last marked directory
+  Jump {
+    name: Option<String>,
+  },
+  /// By default, sets default jump directory regardless of any newly marked directories
+  Hook,
   ListTrackers,
 }

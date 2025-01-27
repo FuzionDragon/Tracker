@@ -9,13 +9,6 @@ pub struct Project {
   pub dir: Option<String>,
 }
 
-pub enum Fields {
-  Priority,
-  Name,
-  Desc,
-  Dir,
-}
-
 pub async fn init(db: &SqlitePool, name: String) -> Result<()> {
   sqlx::query(r#"
     create table if not exists projects (
@@ -41,13 +34,23 @@ pub async fn load(db: &SqlitePool) -> Result<Vec<Project>> {
 }
 
 pub async fn add(db: &SqlitePool, new_priority: i32, new_name: String, new_desc: String, new_dir: String) -> Result<()> {
-  sqlx::query("INSERT INTO projects (priority, name, desc, dir) VALUES ($1, $2, $3, $4)")
-    .bind(new_priority)
-    .bind(new_name)
-    .bind(new_desc)
-    .bind(new_dir)
-    .execute(db)
+  let result = sqlx::query_as::<_, Project>("SELECT * FROM projects WHERE name==$1")
+    .bind(&new_name)
+    .fetch_all(db)
     .await?;
+
+  if result.iter().count() == 0 {
+    sqlx::query("INSERT INTO projects (priority, name, desc, dir) VALUES ($1, $2, $3, $4)")
+      .bind(new_priority)
+      .bind(&new_name)
+      .bind(new_desc)
+      .bind(new_dir)
+      .execute(db)
+      .await?;
+    println!("{} has been added to tracker", new_name);
+  } else {
+    println!("{} is already marked", new_name);
+  }
 
   Ok(())
 }
@@ -86,7 +89,6 @@ pub async fn overwrite(db: &SqlitePool, mut projects: Vec<Project>) -> Result<()
             .execute(db)
             .await?;
         },
-
         None => {
           sqlx::query("INSERT INTO projects (priority, name, desc) VALUES ($1, $2, $3)")
             .bind(project.priority)
@@ -96,9 +98,8 @@ pub async fn overwrite(db: &SqlitePool, mut projects: Vec<Project>) -> Result<()
             .await?;
         }
       }
-      };
-    }
-
+    };
+  }
 
   Ok(())
 }

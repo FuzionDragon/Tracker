@@ -18,8 +18,10 @@
 
 - Add more interactivity
 
-### Immediate
+- Maybe another functionality to add is the ability to quickly store a directory temporarily (specifically deeply nested directories) which can then be used in other ways, like moving multiple different files to said directory.
 
-- Currently Mark breaks running on the same directory more than once, so for validation of this and some other functions which involved adding entries a Query sql function is needed
+- Subset of commands will be under 'track' which will hold commands for more immediate uses, whereas commands under 'tracker' will be for lesser used commands.
+
+### Immediate
 
 - Sqlite Databases are automatically created in the current directory, something for proper use will be annoying. So there is a need to bring back the Toml storage of a main database which the program checks each runtime for database actions.
