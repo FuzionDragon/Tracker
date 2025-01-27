@@ -9,6 +9,13 @@ pub struct Project {
   pub dir: Option<String>,
 }
 
+pub enum Fields {
+  Priority,
+  Name,
+  Desc,
+  Dir,
+}
+
 pub async fn init(db: &SqlitePool, name: String) -> Result<()> {
   sqlx::query(r#"
     create table if not exists projects (

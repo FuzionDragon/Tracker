@@ -1,4 +1,3 @@
-[default_config]
-database = "sqlite"
-
-[[tracker]]
+[config]
+location = ".local/share/tracker/tracker.db"
+mark = ""

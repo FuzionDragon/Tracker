@@ -3,7 +3,7 @@ use anyhow::Ok;
 use clap::Parser;
 use dirs::home_dir;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
-use serde_derive::Deserialize;
+use serde_derive::{ Deserialize, Serialize };
 use anyhow::Result;
 use toml;
 
@@ -13,14 +13,14 @@ use args::Commands;
 use args::Args;
 use sqlite_interface::Project;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct Data {
-  default_config: Config,
+  config: Config,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct Config {
-  database: String,
+  location: String,
 }
 
 const DB_URL: &str = "sqlite://tracker.db";
@@ -31,13 +31,18 @@ async fn main() -> Result<()> {
     .join("dev/rust/tracker/config/tracker.toml".to_owned());
   let config = fs::read_to_string(config_path).expect("Cannot read file");
   let data: Data = toml::from_str(&config).expect("Cannot convert toml to table");
+  let db_path = home_dir().expect("Unable to find home directory")
+    .join(data.config.location)
+    .into_os_string()
+    .into_string()
+    .unwrap();
 
-  if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
-    println!("Creating database: {}", DB_URL);
-    Sqlite::create_database(DB_URL).await?;
+  if !Sqlite::database_exists(&db_path).await.unwrap_or(false) {
+    println!("Creating database: {}", &db_path);
+    Sqlite::create_database(&db_path).await?;
   }
 
-  let db = SqlitePool::connect(DB_URL).await.unwrap();
+  let db = SqlitePool::connect(&db_path).await.unwrap();
 
   sqlite_interface::init(&db, "projects".to_string()).await?;
 

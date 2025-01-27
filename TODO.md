@@ -12,8 +12,6 @@
 
 - Output tracker in different data formats (CSV, JSON, TOML)
 
-- Independant configuration for each created tracker
-
 - Mark and Jump feature to navigate between active projects (need to figure out finer details)
 
 - Add more interactivity
