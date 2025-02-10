@@ -30,10 +30,6 @@ pub enum Commands {
   },
   /// Prints current tracker name and id
   Info,
-  Update {
-    name: String,
-    new_dir: String,
-  },
   /// Adds current directory to the tracker
   /// If there is no hooked directory, then the marked directory becomes the next jump location
   Mark {

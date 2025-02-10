@@ -1,11 +1,12 @@
-use std::{ fs, env };
+use std::{ fs, env, path::Path };
 use anyhow::Ok;
 use clap::Parser;
 use dirs::home_dir;
+use sqlite_interface::Special;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 use serde_derive::{ Deserialize, Serialize };
 use anyhow::Result;
-use toml;
+use toml::from_str;
 
 mod args;
 mod sqlite_interface;
@@ -15,15 +16,8 @@ use sqlite_interface::Project;
 
 #[derive(Deserialize, Serialize)]
 struct Data {
-  config: Config,
-}
-
-#[derive(Deserialize, Serialize)]
-struct Config {
   location: String,
 }
-
-const DB_URL: &str = "sqlite://tracker.db";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -32,7 +26,7 @@ async fn main() -> Result<()> {
   let config = fs::read_to_string(config_path).expect("Cannot read file");
   let data: Data = toml::from_str(&config).expect("Cannot convert toml to table");
   let db_path = home_dir().expect("Unable to find home directory")
-    .join(data.config.location)
+    .join(data.location)
     .into_os_string()
     .into_string()
     .unwrap();
@@ -57,8 +51,14 @@ async fn main() -> Result<()> {
       let projects: Vec<Project> = sqlite_interface::load(&db).await?;
       for project in projects {
         match project.dir {
-          Some(dir) => println!("Priority: {} | Name: {} | Description: {} | Directory: {}", project.priority, project.name, project.desc, dir),
-          None => println!("Priority: {} | Name: {} | Description: {} | Directory: None", project.priority, project.name, project.desc),
+          Some(dir) => {
+            if project.special.is_none() {
+              println!("Priority: {} | Name: {} | Description: {} | Directory: {} | Special: None", project.priority, project.name, project.desc, dir);
+            } else {
+              println!("Priority: {} | Name: {} | Description: {} | Directory: {} | Special: {}", project.priority, project.name, project.desc, dir, project.special.unwrap());
+            }
+          },
+          None => println!("Priority: {} | Name: {} | Description: {} | Directory: None | Special: None", project.priority, project.name, project.desc),
         }
       }
     },
@@ -76,18 +76,12 @@ async fn main() -> Result<()> {
       println!("Query");
     },
     
-    Some(Commands::Update { new_dir, name }) => {
-      sqlite_interface::update(&db, name.to_string(), new_dir.to_string()).await?;
-      println!("Updated project dir");
-    },
-
     Some(Commands::Mark { name }) => {
       mark_project(db, name).await?;
-      println!("Marked Directory");
     },
 
     Some(Commands::Jump { name }) => {
-      println!("Query");
+      jump_project(db, name).await?;
     },
 
     Some(Commands::Hook) => {
@@ -109,10 +103,12 @@ async fn main() -> Result<()> {
 async fn edit_projects(db: SqlitePool) -> Result<()> {
   println!("Editing project");
   let projects: Vec<Project> = sqlite_interface::load(&db).await?;
+  let mut special_vec: Vec<Option<String>> = Vec::new();
   let mut data: String = String::new();
 
   data.push_str("# priority, name, description, directory (optional)\n");
   for project in projects {
+    special_vec.push(project.special);
     let line = match project.dir {
       Some(dir) => format!("{}, {}, {}, {}\n", project.priority, project.name, project.desc, dir),
       
@@ -125,30 +121,34 @@ async fn edit_projects(db: SqlitePool) -> Result<()> {
 
   let mut edited_lines: Vec<&str> = edited.lines().collect();
   edited_lines.remove(0);
+  special_vec.reverse();
 
   let mut edited_tasks: Vec<Project> = vec![]; 
   for line in edited_lines {
     let project: Vec<&str> = line.split(',').collect();
-    if project.len() == 3 {
-      if project[0].parse::<i32>().is_ok() {
+    if project[0].parse::<i32>().is_ok() {
+      if project.len() == 3 {
         edited_tasks.push(
           Project {
             priority: project[0].trim().parse::<i32>().unwrap(),
             name: project[1].trim().to_string(),
             desc: project[2].trim().to_string(),
             dir: None,
+            special: None,
+          }
+        )
+      } else if project.len() == 4 {
+        let special_opt = special_vec.pop().unwrap_or(None);
+        edited_tasks.push(
+          Project {
+            priority: project[0].trim().parse::<i32>().unwrap(),
+            name: project[1].trim().to_string(),
+            desc: project[2].trim().to_string(),
+            dir: Some(project[3].trim().to_string()),
+            special: special_opt,
           }
         )
       }
-    } else if project.len() == 4 && project[0].parse::<i32>().is_ok() {
-      edited_tasks.push(
-        Project {
-          priority: project[0].trim().parse::<i32>().unwrap(),
-          name: project[1].trim().to_string(),
-          desc: project[2].trim().to_string(),
-          dir: Some(project[3].trim().to_string()),
-        }
-      )
     }
   }
   sqlite_interface::overwrite(&db, edited_tasks).await?;
@@ -162,22 +162,38 @@ async fn mark_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
     .into_string()
     .unwrap();
 
+  // Checking if the specific project is marked
   if name.is_none() {
     let collection = cwd
       .split('/')
       .collect::<Vec<&str>>();
-    sqlite_interface::add(&db, 1, collection[collection.len() - 1].to_string(), "Marked Directory".to_owned(), cwd).await?;
+    sqlite_interface::add(&db, 1, collection[collection.len() - 1].to_string(), "Marked Directory".to_owned(), cwd.clone()).await?;
+    sqlite_interface::update_special(&db, collection[collection.len() - 1].to_string(), Special::Mark).await?;
   } else {
-    sqlite_interface::update(&db, name.to_owned().unwrap(), cwd).await?;
+    sqlite_interface::update_directory(&db, name.to_owned().unwrap(), cwd).await?;
+    sqlite_interface::update_special(&db, name.to_owned().unwrap(), Special::Mark).await?;
   }
 
-  Ok(())
-}
-
-async fn jump_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
   Ok(())
 }
 
 async fn hook_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
   Ok(())
 }
+
+async fn jump_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
+  let found_special = sqlite_interface::query_special(&db).await?;
+  let mut checker = false;
+  for special in found_special {
+    if special.special.unwrap() == "Mark" {
+      env::set_current_dir(special.dir.unwrap());
+      checker = true;
+    }
+  }
+  if checker {
+    println!("No marked or hooked directories found");
+  }
+
+  Ok(())
+}
+

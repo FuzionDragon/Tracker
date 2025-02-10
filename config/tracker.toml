@@ -1,3 +1,1 @@
-[config]
 location = ".local/share/tracker/tracker.db"
-mark = ""
