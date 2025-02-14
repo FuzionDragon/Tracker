@@ -136,6 +136,15 @@ pub async fn clear(db: &SqlitePool) -> Result<()> {
   Ok(())
 }
 
+pub async fn query_name(db: &SqlitePool, name: String) -> Result<Project> {
+  let found_special = sqlx::query_as::<_, Project>("SELECT * FROM projects WHERE name==$1")
+    .bind(&name)
+    .fetch_one(db)
+    .await?;
+
+  Ok(found_special)
+}
+
 pub async fn query_special(db: &SqlitePool) -> Result<Vec<Project>> {
   let found_special = sqlx::query_as::<_, Project>("SELECT * FROM projects WHERE special IS NOT NULL")
     .fetch_all(db)

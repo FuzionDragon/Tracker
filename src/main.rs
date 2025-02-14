@@ -182,16 +182,21 @@ async fn hook_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
 }
 
 async fn jump_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
-  let found_special = sqlite_interface::query_special(&db).await?;
-  let mut checker = false;
-  for special in found_special {
-    if special.special.unwrap() == "Mark" {
-      env::set_current_dir(special.dir.unwrap());
-      checker = true;
+  if name.is_some() {
+    let entry = sqlite_interface::query_name(&db, name.to_owned().unwrap()).await?;
+    env::set_current_dir(entry.name).is_ok();
+  } else {
+    let found_special = sqlite_interface::query_special(&db).await?;
+    let mut checker = false;
+    for special in found_special {
+      if special.special.unwrap() == "Mark" {
+        env::set_current_dir(special.dir.unwrap()).is_ok();
+        checker = true;
+      }
     }
-  }
-  if checker {
-    println!("No marked or hooked directories found");
+    if checker {
+      println!("No marked or hooked directories found");
+    }
   }
 
   Ok(())
