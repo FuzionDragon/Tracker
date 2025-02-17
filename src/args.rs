@@ -1,5 +1,8 @@
 use clap::{ command, Parser, Subcommand };
 
+
+use crate::sqlite_interface::Fields;
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
@@ -26,7 +29,7 @@ pub enum Commands {
   },
   /// Queries a specific task based on tracker ID
   Query {
-    id: String,
+    field: String,
   },
   /// Prints current tracker name and id
   Info,
@@ -35,13 +38,13 @@ pub enum Commands {
   Mark {
     name: Option<String>,
   },
-  /// Jumps to a marked directory
-  /// By default tracker will jump to the hooked directory
-  /// If there is no hooked directory, then jump to last marked directory
-  Jump {
-    name: Option<String>,
-  },
+  /// Lists all tasks that are marked in a given tracker
+  Marked,
   /// By default, sets default jump directory regardless of any newly marked directories
   Hook,
+  /// Prints hooked name and directory, if there is no hooked project then it will print the last
+  /// marked project.
+  /// If there are neither then it will print nothing.
+  Hooked,
   ListTrackers,
 }

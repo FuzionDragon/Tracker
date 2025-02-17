@@ -39,8 +39,6 @@ pub async fn init(db: &SqlitePool, name: String) -> Result<()> {
 }
 
 pub async fn load(db: &SqlitePool) -> Result<Vec<Project>> {
-  println!("Loading Tasks");
-
   let projects = sqlx::query_as::<_, Project>("SELECT * FROM projects")
     .fetch_all(db)
     .await?;
@@ -125,6 +123,29 @@ pub async fn overwrite(db: &SqlitePool, mut projects: Vec<Project>) -> Result<()
       }
     };
   }
+
+  Ok(())
+}
+
+pub async fn print_hooked(db: SqlitePool) -> Result<()> {
+  let name = query_special(&db).await?;
+  println!("{:?}", name);
+//  if name.is_some() {
+//    let entry = query_name(&db, name.to_owned().unwrap()).await?;
+//    println!("{}", entry.name);
+//  } else {
+//    let found_special = query_special(&db).await?;
+//    let mut checker = false;
+//    for special in found_special {
+//      if special.special.unwrap() == "Mark" {
+//        println!("{}", special.dir.unwrap());
+//        checker = true;
+//      }
+//    }
+//    if checker {
+//      println!("No marked or hooked directories found");
+//    }
+//  }
 
   Ok(())
 }

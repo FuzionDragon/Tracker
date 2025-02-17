@@ -95,10 +95,8 @@ async fn main() -> Result<()> {
       if special.is_empty() {
         println!("No hooked projects found");
       } else {
-        for project in special {
-          if project.special.to_owned().unwrap() == *"HOOKED" {
-            println!("{} | {} | {}", project.name, project.dir.unwrap(), project.special.unwrap());
-          }
+        for mark in special {
+          println!("{} | {} | {}", mark.name, mark.dir.unwrap(), mark.special.unwrap());
         }
       }
       let special = sqlite_interface::query_special(&db).await?;
