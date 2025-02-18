@@ -41,7 +41,11 @@ pub enum Commands {
   /// Lists all tasks that are marked in a given tracker
   Marked,
   /// By default, sets default jump directory regardless of any newly marked directories
-  Hook,
+  Hook {
+    name: String,
+  },
+  /// Unhooks the currently hooked project, otherwise does nothing
+  Unhook,
   /// Prints hooked name and directory, if there is no hooked project then it will print the last
   /// marked project.
   /// If there are neither then it will print nothing.

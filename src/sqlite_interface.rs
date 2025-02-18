@@ -178,9 +178,9 @@ pub async fn update_special(db: &SqlitePool, name: String, special: Special) -> 
   let found_special = query_special(db).await?;
 
   let new_special = match special {
-    Special::Hook => "Hook".to_string(),
+    Special::Hook => "HOOKED".to_string(),
 
-    Special::Mark => "Mark".to_string(),
+    Special::Mark => "MARKED".to_string(),
   };
 
   for special in found_special {
@@ -202,6 +202,20 @@ pub async fn update_special(db: &SqlitePool, name: String, special: Special) -> 
     .bind(name)
     .execute(db)
     .await?;
+
+  Ok(())
+}
+
+pub async fn unhook(db: &SqlitePool) -> Result<()> {
+  sqlx::query(r#"
+    UPDATE projects
+    SET special=NULL
+    WHERE special='HOOKED';
+    "#)
+    .execute(db)
+    .await?;
+
+  println!("Unhooked any hooked projects");
 
   Ok(())
 }

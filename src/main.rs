@@ -104,8 +104,13 @@ async fn main() -> Result<()> {
       let special = sqlite_interface::query_special(&db).await?;
     },
 
-    Some(Commands::Hook) => {
-      println!("Query");
+    Some(Commands::Hook { name }) => {
+      let special = Special::Hook;
+      sqlite_interface::update_special(&db, name.to_string(), special).await?;
+    },
+
+    Some(Commands::Unhook) => {
+      sqlite_interface::unhook(&db).await?;
     },
     
     Some(Commands::ListTrackers) => {
