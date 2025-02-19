@@ -60,9 +60,9 @@ pub async fn add(db: &SqlitePool, new_priority: i32, new_name: String, new_desc:
       .bind(new_dir)
       .execute(db)
       .await?;
-    println!("{} has been added to tracker", new_name);
+    println!("Project '{}' has been added to tracker", new_name);
   } else {
-    println!("{} already exists", new_name);
+    println!("Project '{}' already exists", new_name);
   }
 
   Ok(())
@@ -198,7 +198,8 @@ pub async fn update_special(db: &SqlitePool, name: String, special: Special) -> 
     UPDATE projects
     SET special=$1
     WHERE name=$2;
-    "#).bind(new_special)
+    "#)
+    .bind(new_special)
     .bind(name)
     .execute(db)
     .await?;

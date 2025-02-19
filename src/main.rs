@@ -67,10 +67,6 @@ async fn main() -> Result<()> {
       println!("Cleared projects");
     },
 
-    Some(Commands::Query { field }) => {
-      println!("Query");
-    },
-
     Some(Commands::Info) => {
       println!("Query");
     },
@@ -92,16 +88,22 @@ async fn main() -> Result<()> {
 
     Some(Commands::Hooked) => {
       let special = sqlite_interface::query_special(&db).await?;
+      let mut marked: Option<Project> = None;
       if special.is_empty() {
         println!("No hooked projects found");
       } else {
         for project in special {
           if project.special.to_owned().unwrap() == *"HOOKED" {
             println!("{} | {} | {}", project.name, project.dir.unwrap(), project.special.unwrap());
+          } else if project.special.to_owned().unwrap() == *"MARKED" && marked.is_none() {
+            marked = Some(project);
           }
         }
       }
-      let special = sqlite_interface::query_special(&db).await?;
+      if marked.is_some() {
+        let project: Project = marked.unwrap();
+        println!("{} | {} | {}", project.name, project.dir.unwrap(), project.special.unwrap());
+      }
     },
 
     Some(Commands::Hook { name }) => {
