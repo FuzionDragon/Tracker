@@ -2,17 +2,16 @@ use std::{ fs, env, path::Path };
 use anyhow::Ok;
 use clap::Parser;
 use dirs::home_dir;
-use sqlite_interface::Special;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 use serde_derive::{ Deserialize, Serialize };
 use anyhow::Result;
 use toml::from_str;
 
 mod args;
-mod sqlite_interface;
 use args::Commands;
 use args::Args;
-use sqlite_interface::Project;
+use tracker::sqlite_interface;
+use tracker::sqlite_interface::*;
 
 #[derive(Deserialize, Serialize)]
 struct Data {

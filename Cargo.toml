@@ -14,3 +14,11 @@ serde_derive = "1.0.217"
 sqlx = { version = "0.8.3", features = ["sqlite", "runtime-tokio", "tls-native-tls"] }
 tokio = { version = "1.43.0", features = ["rt", "macros", "rt-multi-thread"] }
 toml = "0.8.19"
+
+[[bin]]
+name = "tracker"
+path = "src/tracker/main.rs"
+
+[[bin]]
+name = "track"
+path = "src/track/main.rs"
