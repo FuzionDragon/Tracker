@@ -130,22 +130,6 @@ pub async fn overwrite(db: &SqlitePool, mut projects: Vec<Project>) -> Result<()
 pub async fn print_hooked(db: SqlitePool) -> Result<()> {
   let name = query_special(&db).await?;
   println!("{:?}", name);
-//  if name.is_some() {
-//    let entry = query_name(&db, name.to_owned().unwrap()).await?;
-//    println!("{}", entry.name);
-//  } else {
-//    let found_special = query_special(&db).await?;
-//    let mut checker = false;
-//    for special in found_special {
-//      if special.special.unwrap() == "Mark" {
-//        println!("{}", special.dir.unwrap());
-//        checker = true;
-//      }
-//    }
-//    if checker {
-//      println!("No marked or hooked directories found");
-//    }
-//  }
 
   Ok(())
 }
@@ -174,35 +158,74 @@ pub async fn query_special(db: &SqlitePool) -> Result<Vec<Project>> {
   Ok(found_special)
 }
 
+// Updates special fields, replacing the specific project special if applicable.
 pub async fn update_special(db: &SqlitePool, name: String, special: Special) -> Result<()>{
   let found_special = query_special(db).await?;
+  let mut marked: Option<String> = None;
+  let mut hooked: Option<String> = None;
 
-  let new_special = match special {
-    Special::Hook => "HOOKED".to_string(),
-
-    Special::Mark => "MARKED".to_string(),
-  };
-
-  for special in found_special {
-    sqlx::query(r#"
-      UPDATE projects
-      SET special=NULL
-      WHERE name=$1;
-      "#)
-      .bind(special.name)
-      .execute(db)
-      .await?;
+  for project in found_special {
+    if project.special.is_some() {
+      let special = project.special.unwrap();
+      if special == "MARKED" {
+        marked = Some(project.name);
+      } else if special == "HOOKED" {
+        hooked = Some(project.name);
+      }
+    }
   }
 
-  sqlx::query(r#"
-    UPDATE projects
-    SET special=$1
-    WHERE name=$2;
-    "#)
-    .bind(new_special)
-    .bind(name)
-    .execute(db)
-    .await?;
+  /*
+   * Cases:
+   * 1. Hooked: Prescence of Hooked field, replacing the existing with NULL and new one with the
+   *    item
+   * 2. Hooked: No prescence of Hooked field, just add it to the selected item
+   * 3. Marked: Prescence of Marked field, move the Marked onto this current item
+   * 4. Marked: No prescence of Marked field, just add it to the selected item
+   */
+  match special {
+    Special::Hook => {
+      if hooked.is_some() {
+        sqlx::query(r#"
+          UPDATE projects
+          SET special=NULL
+          WHERE name=$1;
+          "#)
+          .bind(hooked.unwrap())
+          .execute(db)
+          .await?;
+      }
+      sqlx::query(r#"
+        UPDATE projects
+        SET special='HOOKED'
+        WHERE name=$2;
+        "#)
+        .bind(name)
+        .execute(db)
+        .await?;
+    },
+
+    Special::Mark => {
+      if marked.is_some() {
+        sqlx::query(r#"
+          UPDATE projects
+          SET special=NULL
+          WHERE name=$1;
+          "#)
+          .bind(marked.unwrap())
+          .execute(db)
+          .await?;
+      }
+      sqlx::query(r#"
+        UPDATE projects
+        SET special='MARKED'
+        WHERE name=$2;
+        "#)
+        .bind(name)
+        .execute(db)
+        .await?;
+    }
+  }
 
   Ok(())
 }

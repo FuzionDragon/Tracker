@@ -1,8 +1,6 @@
 use clap::{ command, Parser, Subcommand };
 
 
-use crate::sqlite_interface::Fields;
-
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
