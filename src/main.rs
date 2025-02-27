@@ -1,4 +1,4 @@
-use std::{ fs, env, path::Path };
+use std::{ fs, env, collections::HashMap };
 use anyhow::Ok;
 use clap::Parser;
 use dirs::home_dir;
@@ -106,8 +106,7 @@ async fn main() -> Result<()> {
     },
 
     Some(Commands::Hook { name }) => {
-      let special = Special::Hook;
-      sqlite_interface::update_special(&db, name.to_string(), special).await?;
+      hook_project(db, name).await?;
     },
 
     Some(Commands::Unhook) => {
@@ -129,12 +128,19 @@ async fn main() -> Result<()> {
 async fn edit_projects(db: SqlitePool) -> Result<()> {
   println!("Editing project");
   let projects: Vec<Project> = sqlite_interface::load(&db).await?;
-  let mut special_vec: Vec<Option<String>> = Vec::new();
+  let mut special_map: HashMap<String, Special> = HashMap::new();
   let mut data: String = String::new();
 
   data.push_str("# priority, name, description, directory (optional)\n");
   for project in projects {
-    special_vec.push(project.special);
+    if project.special.is_some() {
+      if project.special.clone().unwrap() == *"MARKED" {
+        special_map.insert(project.name.clone(), Special::Mark);
+      }
+      if project.special.unwrap() == *"HOOKED" {
+        special_map.insert(project.name.clone(), Special::Hook);
+      }
+    }
     let line = match project.dir {
       Some(dir) => format!("{}, {}, {}, {}\n", project.priority, project.name, project.desc, dir),
       
@@ -147,7 +153,6 @@ async fn edit_projects(db: SqlitePool) -> Result<()> {
 
   let mut edited_lines: Vec<&str> = edited.lines().collect();
   edited_lines.remove(0);
-  special_vec.reverse();
 
   let mut edited_tasks: Vec<Project> = vec![]; 
   for line in edited_lines {
@@ -164,7 +169,19 @@ async fn edit_projects(db: SqlitePool) -> Result<()> {
           }
         )
       } else if project.len() == 4 {
-        let special_opt = special_vec.pop().unwrap_or(None);
+        // needs to set special_opt to a none or a special enum depending on if it exists in the
+        // hashmap
+        let key = project[1].trim().to_string();
+        let special_opt: Option<String> = if special_map.contains_key(&key) {
+          match special_map[&key] {
+            Special::Hook => Some("HOOKED".to_string()),
+
+            Special::Mark => Some("MARKED".to_string()),
+          }
+        } else {
+          None
+        };
+
         edited_tasks.push(
           Project {
             priority: project[0].trim().parse::<i32>().unwrap(),
@@ -193,11 +210,32 @@ async fn mark_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
     let collection = cwd
       .split('/')
       .collect::<Vec<&str>>();
-    sqlite_interface::add(&db, 1, collection[collection.len() - 1].to_string(), "Marked Directory".to_owned(), cwd.clone()).await?;
+    sqlite_interface::add(&db, 1, collection[collection.len() - 1].to_string(), "Marked Directory".to_owned(), cwd.clone(), Special::Mark).await?;
     sqlite_interface::update_special(&db, collection[collection.len() - 1].to_string(), Special::Mark).await?;
   } else {
     sqlite_interface::update_directory(&db, name.to_owned().unwrap(), cwd).await?;
     sqlite_interface::update_special(&db, name.to_owned().unwrap(), Special::Mark).await?;
+  }
+
+  Ok(())
+}
+
+async fn hook_project(db: SqlitePool, name: &Option<String>) -> Result<()> {
+  let cwd = env::current_dir()?
+    .into_os_string()
+    .into_string()
+    .unwrap();
+
+  // Checking if the specific project is marked or hooked
+  if name.is_none() {
+    let collection = cwd
+      .split('/')
+      .collect::<Vec<&str>>();
+    sqlite_interface::add(&db, 1, collection[collection.len() - 1].to_string(), "Hooked Directory".to_owned(), cwd.clone(), Special::Hook).await?;
+    sqlite_interface::update_special(&db, collection[collection.len() - 1].to_string(), Special::Hook).await?;
+  } else {
+    sqlite_interface::update_directory(&db, name.to_owned().unwrap(), cwd).await?;
+    sqlite_interface::update_special(&db, name.to_owned().unwrap(), Special::Hook).await?;
   }
 
   Ok(())

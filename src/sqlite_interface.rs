@@ -46,7 +46,8 @@ pub async fn load(db: &SqlitePool) -> Result<Vec<Project>> {
   Ok(projects)
 }
 
-pub async fn add(db: &SqlitePool, new_priority: i32, new_name: String, new_desc: String, new_dir: String) -> Result<()> {
+// Used by hook_project and mark_project to add 
+pub async fn add(db: &SqlitePool, new_priority: i32, new_name: String, new_desc: String, new_dir: String, new_special: Special) -> Result<()> {
   let name_result = sqlx::query_as::<_, Project>("SELECT * FROM projects WHERE name==$1")
     .bind(&new_name)
     .fetch_all(db)
@@ -62,7 +63,11 @@ pub async fn add(db: &SqlitePool, new_priority: i32, new_name: String, new_desc:
       .await?;
     println!("Project '{}' has been added to tracker", new_name);
   } else {
-    println!("Project '{}' already exists", new_name);
+    match new_special {
+      Special::Hook => {},
+
+      Special::Mark => {},
+    }
   }
 
   Ok(())
@@ -84,8 +89,6 @@ pub async fn update_directory(db: &SqlitePool, name: String, new_dir: String) ->
       .bind(name)
       .execute(db)
       .await?;
-  } else {
-    println!("Directory already exists");
   }
 
   Ok(())
@@ -183,22 +186,23 @@ pub async fn update_special(db: &SqlitePool, name: String, special: Special) -> 
    * 3. Marked: Prescence of Marked field, move the Marked onto this current item
    * 4. Marked: No prescence of Marked field, just add it to the selected item
    */
+
   match special {
     Special::Hook => {
-      if hooked.is_some() {
+      if let Some(hook) = hooked {
         sqlx::query(r#"
           UPDATE projects
           SET special=NULL
           WHERE name=$1;
           "#)
-          .bind(hooked.unwrap())
+          .bind(hook)
           .execute(db)
           .await?;
       }
       sqlx::query(r#"
         UPDATE projects
         SET special='HOOKED'
-        WHERE name=$2;
+        WHERE name=$1;
         "#)
         .bind(name)
         .execute(db)
@@ -206,24 +210,26 @@ pub async fn update_special(db: &SqlitePool, name: String, special: Special) -> 
     },
 
     Special::Mark => {
-      if marked.is_some() {
+      if hooked.is_none() {
+        if let Some(mark) = marked {
+          sqlx::query(r#"
+            UPDATE projects
+            SET special=NULL
+            WHERE name=$1;
+            "#)
+            .bind(mark)
+            .execute(db)
+            .await?;
+        }
         sqlx::query(r#"
           UPDATE projects
-          SET special=NULL
+          SET special='MARKED'
           WHERE name=$1;
           "#)
-          .bind(marked.unwrap())
+          .bind(name)
           .execute(db)
           .await?;
       }
-      sqlx::query(r#"
-        UPDATE projects
-        SET special='MARKED'
-        WHERE name=$2;
-        "#)
-        .bind(name)
-        .execute(db)
-        .await?;
     }
   }
 

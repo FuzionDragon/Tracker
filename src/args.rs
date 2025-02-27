@@ -40,7 +40,7 @@ pub enum Commands {
   Marked,
   /// By default, sets default jump directory regardless of any newly marked directories
   Hook {
-    name: String,
+    name: Option<String>,
   },
   /// Unhooks the currently hooked project, otherwise does nothing
   Unhook,
