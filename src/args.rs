@@ -11,42 +11,29 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Commands {
-  /// Initialises and sets current Tracker database at a given path 
-  /// Required to do once before using Tracker
-  Init {
-    tracker: String,
-  },
   /// Edit tasks in default text editor $EDITOR
   Edit,
-  /// Lists all tasks in a given tracker
+  /// Lists all projects 
   List,
-  /// Clears all tasks in a given tracker
-  /// Allows specifying which tracker to be cleared
-  Clear {
-    tracker: Option<String>,
-  },
-  /// Queries a specific task based on tracker ID
-  Query {
-    field: String,
-  },
-  /// Prints current tracker name and id
-  Info,
-  /// Adds current directory to the tracker
+  /// Clears all projects 
+  Clear,
+  /// Adds current project directory to the tracker
   /// If there is no hooked directory, then the marked directory becomes the next jump location
   Mark {
     name: Option<String>,
   },
-  /// Lists all tasks that are marked in a given tracker
-  Marked,
   /// By default, sets default jump directory regardless of any newly marked directories
   Hook {
     name: Option<String>,
   },
-  /// Unhooks the currently hooked project, otherwise does nothing
-  Unhook,
   /// Prints hooked name and directory, if there is no hooked project then it will print the last
   /// marked project.
   /// If there are neither then it will print nothing.
   Hooked,
-  ListTrackers,
+  /// Unhooks the currently hooked project, otherwise does nothing
+  Unhook,
+  /// Prints both hooked and marked projects
+  Special,
+  /// Prints all projects with a non-empty directory field
+  Dirs,
 }

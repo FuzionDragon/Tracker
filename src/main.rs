@@ -20,6 +20,7 @@ struct Data {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+  // Config path needs to be set to XDGCONFIG path
   let config_path = home_dir().expect("Unable to find home directory")
     .join("dev/rust/tracker/config/tracker.toml".to_owned());
   let config = fs::read_to_string(config_path).expect("Cannot read file");
@@ -48,40 +49,44 @@ async fn main() -> Result<()> {
     Some(Commands::List) => {
       let projects: Vec<Project> = sqlite_interface::load(&db).await?;
       for project in projects {
-        match project.dir {
-          Some(dir) => {
-            if project.special.is_none() {
-              println!("Priority: {} | Name: {} | Description: {} | Directory: {} | Special: None", project.priority, project.name, project.desc, dir);
-            } else {
-              println!("Priority: {} | Name: {} | Description: {} | Directory: {} | Special: {}", project.priority, project.name, project.desc, dir, project.special.unwrap());
-            }
-          },
-          None => println!("Priority: {} | Name: {} | Description: {} | Directory: None | Special: None", project.priority, project.name, project.desc),
+        if let Some(dir) = project.dir {
+          if let Some(special) = project.special {
+            println!("Priority: {} | Name: {} | Description: {} | Directory: {} | Special: {}", project.priority, project.name, project.desc, dir, special);
+          } else {
+            println!("Priority: {} | Name: {} | Description: {} | Directory: {} | Special: None", project.priority, project.name, project.desc, dir);
+          }
+        } else {
+          println!("Priority: {} | Name: {} | Description: {} | Directory: None | Special: None", project.priority, project.name, project.desc);
         }
       }
     },
 
-    Some(Commands::Clear { tracker }) => {
+    Some(Commands::Dirs) => {
+      let projects: Vec<Project> = sqlite_interface::load(&db).await?;
+      for project in projects {
+        if let Some(dir) = project.dir {
+          if let Some(special) = project.special {
+            println!("Priority: {} | Name: {} | Description: {} | Directory: {} | Special: {}", project.priority, project.name, project.desc, dir, special);
+          } else {
+            println!("Priority: {} | Name: {} | Description: {} | Directory: {} | Special: None", project.priority, project.name, project.desc, dir);
+          }
+        }
+      }
+    },
+
+    Some(Commands::Clear) => {
       sqlite_interface::clear(&db).await?;
       println!("Cleared projects");
     },
 
-    Some(Commands::Info) => {
-      println!("Query");
-    },
-    
     Some(Commands::Mark { name }) => {
       mark_project(db, name).await?;
     },
 
-    Some(Commands::Marked) => {
+    Some(Commands::Special) => {
       let special = sqlite_interface::query_special(&db).await?;
-      if special.is_empty() {
-        println!("No marked projects found");
-      } else {
-        for project in special {
-          println!("{} | {} | {}", project.name, project.dir.unwrap(), project.special.unwrap());
-        }
+      for project in special {
+        println!("{} | {} | {}", project.name, project.dir.unwrap(), project.special.unwrap());
       }
     }
 
@@ -113,10 +118,6 @@ async fn main() -> Result<()> {
       sqlite_interface::unhook(&db).await?;
     },
     
-    Some(Commands::ListTrackers) => {
-      println!("Query");
-    },
-
     none => {
       edit_projects(db).await?;
     },
