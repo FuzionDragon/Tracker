@@ -107,13 +107,24 @@ pub async fn overwrite(db: &SqlitePool, mut projects: Vec<Project>) -> Result<()
     if names.is_empty() {
       match project.dir {
         Some(dir) => {
-          sqlx::query("INSERT INTO projects (priority, name, desc, dir) VALUES ($1, $2, $3, $4)")
-            .bind(project.priority)
-            .bind(project.name)
-            .bind(project.desc)
-            .bind(dir)
-            .execute(db)
-            .await?;
+          if let Some(special) = project.special {
+            sqlx::query("INSERT INTO projects (priority, name, desc, dir, special) VALUES ($1, $2, $3, $4, $5)")
+              .bind(project.priority)
+              .bind(project.name)
+              .bind(project.desc)
+              .bind(dir)
+              .bind(special)
+              .execute(db)
+              .await?;
+          } else {
+            sqlx::query("INSERT INTO projects (priority, name, desc, dir) VALUES ($1, $2, $3, $4)")
+              .bind(project.priority)
+              .bind(project.name)
+              .bind(project.desc)
+              .bind(dir)
+              .execute(db)
+              .await?;
+          };
         },
         None => {
           sqlx::query("INSERT INTO projects (priority, name, desc) VALUES ($1, $2, $3)")
