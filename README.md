@@ -16,6 +16,8 @@ You will need to have EDITOR defined with your favourite text editor in your env
 
 The database will be created and stored in ~/.local/share/tracker/tracker.db.
 
+___
+
 ### Usage
 
 Due to limitations of Rust programs only being able to affect its own environment and not the users shell, scripts or certain other commands are needed for more environmental functionality.
@@ -24,7 +26,7 @@ With that in mind the tool has been made with simple outputs which helps with fl
 
 Some scripts found in the project root which I use.
 
-You can have an interactive picking of project directories to cd into.
+You can have an interactive picking of project directories to cd into using Fzf (https://github.com/junegunn/fzf).
 
 ```bash
 !/path/to/shell
