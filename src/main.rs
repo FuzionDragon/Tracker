@@ -1,11 +1,10 @@
-use std::{ fs, env, collections::HashMap };
+use std::{ fs, fs::File, env, collections::HashMap };
 use anyhow::Ok;
 use clap::Parser;
-use dirs::home_dir;
+use dirs::data_local_dir;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 use serde_derive::{ Deserialize, Serialize };
 use anyhow::Result;
-use toml::from_str;
 
 mod args;
 use args::Commands;
@@ -13,24 +12,22 @@ use args::Args;
 use tracker::sqlite_interface;
 use tracker::sqlite_interface::*;
 
-#[derive(Deserialize, Serialize)]
-struct Data {
-  location: String,
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
-  // Config path needs to be set to XDGCONFIG path
-  let config_path = home_dir().expect("Unable to find home directory")
-    .join("dev/rust/tracker/config/tracker.toml".to_owned());
-  let config = fs::read_to_string(config_path).expect("Cannot read file");
-  let data: Data = toml::from_str(&config).expect("Cannot convert toml to table");
-  let db_path = home_dir().expect("Unable to find home directory")
-    .join(data.location)
+  // Accessing local share directory on the system
+  // Creating a tracker directory and database if needed
+  let tracker_dir = data_local_dir().expect("Unable to find local share directory")
+    .join("tracker");
+  if !fs::exists(&tracker_dir).unwrap() {
+    println!("{:?}", &tracker_dir);
+    println!("Tracker directory path doesn't exist, creating directory ~/.local/share/tracker");
+    fs::create_dir_all(&tracker_dir).expect("Unable to create tracker directory");
+  }
+  let db_path = tracker_dir
+    .join("tracker.db")
     .into_os_string()
     .into_string()
     .unwrap();
-
   if !Sqlite::database_exists(&db_path).await.unwrap_or(false) {
     println!("Creating database: {}", &db_path);
     Sqlite::create_database(&db_path).await?;
